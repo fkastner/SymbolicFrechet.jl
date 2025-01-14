@@ -3,7 +3,7 @@ module SymbolicFrechet
 using SymbolicUtils
 import SymbolicUtils: Symbolic
 
-export MultiLinearOperator, FrechetDifferential
+export MultiLinearOperator, FrechetDerivative
 export expand_fdiffs, expand_MLOs
 
 abstract type AbstractMultiLinearOperator end
@@ -65,7 +65,6 @@ struct FrechetDifferential <: AbstractMultiLinearOperator
     order
     fun
 end
-FrechetDifferential(order=1) = fun -> FrechetDifferential(order, fun)
 FrechetDifferential(order,d::FrechetDifferential) = FrechetDifferential(order+d.order,d.fun)
 
 nargs(D::FrechetDifferential) = isa(D.fun, AbstractMultiLinearOperator) ? D.order + nargs(D.fun) : D.order
@@ -102,6 +101,7 @@ function expand_fdiff(T, args)
     inner_args = arguments(fun)
 
     if op == (+)
+        # linearity
         return sum(inner_args) do arg
             expand_fdiff(FrechetDifferential(order, arg), args)
         end
@@ -118,7 +118,7 @@ function expand_fdiff(T, args)
 
             for i = 1:len
                 c = count(==(i), t)
-                new_args[i] = (c == 0) ? inner_args[i] : FrechetDifferential(c, inner_args[i])(args[collect(t) .== i]...)
+                new_args[i] = (c == 0) ? inner_args[i] : expand_fdiff(FrechetDifferential(c, inner_args[i]), args[collect(t) .== i])
             end
 
             new_op(new_args...)
@@ -127,5 +127,18 @@ function expand_fdiff(T, args)
 
     return T(args...)
 end
+
+struct FrechetDerivative
+    order::Int64
+    FrechetDerivative(order=1) = order <= 0 ? error("Order must be a positive natural number.") : new(order)
+end
+(D::FrechetDerivative)(u) = FrechetDifferential(D.order, u)
+
+Base.:*(D1::FrechetDerivative, D2::FrechetDerivative) = FrechetDerivative(D1.order+D2.order)
+Base.:*(D::FrechetDerivative, DU::FrechetDifferential) = FrechetDifferential(D.order+DU.order, DU.fun)
+Base.:^(D::FrechetDerivative, n::Integer) = iszero(n) ? identity : FrechetDerivative(D.order * n)
+
+Base.nameof(D::FrechetDerivative) = :d
+Base.show(io::IO, D::FrechetDerivative) = print(io, D.order == 1 ? "d" : "d^$(D.order)")
 
 end # module
