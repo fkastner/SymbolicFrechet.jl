@@ -1,0 +1,11 @@
+name = "SymbolicFrechet"
+uuid = "0f73b851-e936-4055-bdab-809eaeb91953"
+authors = ["Felix Kastner <kastner.felix@gmail.com>"]
+version = "0.1.0"
+
+[deps]
+SymbolicUtils = "d1185830-fcd6-423d-90d6-eec64667417b"
+
+[compat]
+SymbolicUtils = "3.8"
+julia = "1.10"
