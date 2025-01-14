@@ -66,6 +66,7 @@ struct FrechetDifferential <: AbstractMultiLinearOperator
     fun
 end
 FrechetDifferential(order,d::FrechetDifferential) = FrechetDifferential(order+d.order,d.fun)
+FrechetDifferential(order, ::typeof(*)) = Returns(0)
 
 nargs(D::FrechetDifferential) = isa(D.fun, AbstractMultiLinearOperator) ? D.order + nargs(D.fun) : D.order
 
@@ -105,7 +106,7 @@ function expand_fdiff(T, args)
         return sum(inner_args) do arg
             expand_fdiff(FrechetDifferential(order, arg), args)
         end
-    elseif isa(op, AbstractMultiLinearOperator)
+    elseif isa(op, AbstractMultiLinearOperator) || op == (*)
         # chain rule; don't ask
         len = length(inner_args)
         return sum(Iterators.product(ntuple(Returns(0:len),order)...)) do t
