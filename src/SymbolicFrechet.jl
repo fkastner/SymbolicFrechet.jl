@@ -123,45 +123,6 @@ function expand_fdiff(T, args)
 
             new_op(new_args...)
         end
-
-        # if order == 1
-        #     return FrechetDifferential(1,op)(inner_args...,args...) + sum(1:len) do i
-        #         new_args = copy(inner_args)
-        #         new_args[i] = expand_fdiff(FrechetDifferential(1,inner_args[i]),args)
-        #         return op(new_args...)
-        #     end
-        # elseif order == 2
-        #     res = 0
-        #     for i=0:len
-        #         for j=0:len
-        #             new_op = op
-        #             new_args = copy(inner_args)
-        #             copy_args = copy(args)
-        #             if i == 0
-        #                 new_op = FrechetDifferential(1,new_op)
-        #                 push!(new_args, popfirst!(copy_args))
-        #             elseif i == j # != 0
-        #                 new_args[i] = FrechetDifferential(2,new_args[i])(copy_args...)
-        #             else
-        #                 # new_args[i] = FrechetDifferential(1,new_args[i])(popfirst!(copy_args))
-        #                 new_args[i] = expand_fdiff(FrechetDifferential(1, new_args[i]), [popfirst!(copy_args)])
-        #             end
-        #             if j == 0
-        #                 new_op = FrechetDifferential(1,new_op)
-        #                 push!(new_args, popfirst!(copy_args))
-        #             elseif i != j
-        #                 # new_args[j] = FrechetDifferential(1,new_args[j])(popfirst!(copy_args))
-        #                 new_args[j] = expand_fdiff(FrechetDifferential(1, new_args[j]), [popfirst!(copy_args)])
-        #             end
-        #             res += new_op(new_args...)
-        #         end
-        #     end
-        #     return res
-        # else
-        #     # too much chain rule :(
-        #     # return expand_fdiff(FrechetDifferential(order-1, expand_fdiff(FrechetDifferential(1, fun), args[[1]])), args[2:end]) 
-        #     throw(ArgumentError("too much order: $order"))
-        # end
     end
 
     return T(args...)
