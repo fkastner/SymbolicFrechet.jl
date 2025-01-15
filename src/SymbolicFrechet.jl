@@ -128,6 +128,14 @@ function expand_fdiff(T::FrechetDifferential, args)
 
             new_op(new_args...)
         end
+    elseif op == (^) && isa(inner_args[2], Number) && order == 1
+        base = inner_args[1]
+        expo = inner_args[2]
+        if isinteger(expo) && expo < order
+            return 0
+        else
+            return expo*base^(expo-1)*expand_fdiff(FrechetDifferential(1, base), args)
+        end
     end
 
     return T(args...)
