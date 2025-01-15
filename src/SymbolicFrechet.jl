@@ -128,13 +128,17 @@ function expand_fdiff(T::FrechetDifferential, args)
 
             new_op(new_args...)
         end
-    elseif op == (^) && isa(inner_args[2], Number) && order == 1
+    elseif op == (^) && isa(inner_args[2], Number)
+        # chain rule, again
         base = inner_args[1]
-        expo = inner_args[2]
-        if isinteger(expo) && expo < order
-            return 0
-        else
-            return expo*base^(expo-1)*expand_fdiff(FrechetDifferential(1, base), args)
+        len = inner_args[2]
+        return sum(Iterators.product(ntuple(Returns(1:len),order)...)) do t
+            new_args = Vector{Any}(undef, len)
+            for i = 1:len
+                c = count(==(i), t)
+                new_args[i] = (c == 0) ? base : expand_fdiff(FrechetDifferential(c, base), args[collect(t) .== i])
+            end
+            *(new_args...)
         end
     end
 
