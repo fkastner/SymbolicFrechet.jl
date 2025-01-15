@@ -1,7 +1,7 @@
 module SymbolicFrechet
 
 using SymbolicUtils
-import SymbolicUtils: Symbolic
+import SymbolicUtils: Symbolic, symtype
 
 export MultiLinearOperator, FrechetDerivative
 export expand_fdiffs, expand_MLOs
@@ -60,6 +60,7 @@ nargs(T::MultiLinearOperator) = T.nargs
 Base.nameof(T::MultiLinearOperator) = T.name
 Base.show(io::IO, T::MultiLinearOperator) = print(io, T.name)
 
+struct ZeroDeriv <: Number end
 
 struct FrechetDifferential <: AbstractMultiLinearOperator
     order
@@ -67,6 +68,7 @@ struct FrechetDifferential <: AbstractMultiLinearOperator
 end
 FrechetDifferential(order,d::FrechetDifferential) = FrechetDifferential(order+d.order,d.fun)
 FrechetDifferential(order, ::typeof(*)) = Returns(0)
+FrechetDifferential(order, ::SymbolicUtils.BasicSymbolic{ZeroDeriv}) = Returns(0)
 
 nargs(D::FrechetDifferential) = isa(D.fun, AbstractMultiLinearOperator) ? D.order + nargs(D.fun) : D.order
 
@@ -91,11 +93,13 @@ function expand_fdiffs(O::Symbolic)
 end
 expand_fdiffs(x) = x
 
-function expand_fdiff(T, args)
+expand_fdiff(T, args) = T(args...)
+function expand_fdiff(T::FrechetDifferential, args)
     order = T.order
     fun = T.fun
 
     isa(fun, Number) && return 0
+    symtype(fun) <: ZeroDeriv && return 0
     !iscall(fun) && return T(args...)
 
     op = operation(fun)
