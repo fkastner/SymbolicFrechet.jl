@@ -46,6 +46,11 @@ function expand_MLO(T, args)
                 new_args[i] = prod(inner_args[2:end])
                 return inner_args[1]*expand_MLO(T,new_args)
             end
+        elseif isa(op, AbstractMultiLinearOperator)
+            inner_args = arguments(arg)
+            new_args = copy(args)
+            new_args[i] = expand_MLO(op, inner_args)
+            !isequal(new_args[i], args[i]) && return expand_MLO(T, new_args)
         end
     end
 
