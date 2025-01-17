@@ -12,6 +12,34 @@ abstract type AbstractMultiLinearOperator end
 SymbolicUtils.promote_symtype(::AbstractMultiLinearOperator, Ts...) = Real
 SymbolicUtils.isbinop(::AbstractMultiLinearOperator) = false
 
+
+#### distribute * over +
+function distribute(O::Symbolic)
+    iscall(O) || return O
+
+    op = operation(O)
+    args = arguments(O)
+
+    if op == (*)
+        for (i,arg) in enumerate(args)
+            iscall(arg) || continue
+            inner_op = operation(arg)
+            inner_args = arguments(arg)
+            if inner_op == (+)
+                rest_prod = prod(args[(1:i-1)∪(i+1:end)])
+                return sum(inner_args) do a
+                    distribute(a*rest_prod)
+                end
+            end
+        end
+        return O
+    else
+        args_expanded = map(distribute, args)
+        return op(args_expanded...)
+    end
+end
+distribute(x) = x 
+
 function expand_MLOs(O::Symbolic)
     iscall(O) || return O
 
@@ -31,23 +59,31 @@ function expand_MLO(T, args)
     for (i,arg) in enumerate(args)
         iscall(arg) || continue
         op = operation(arg)
+        inner_args = arguments(arg)
 
         if op == (+)
-            inner_args = arguments(arg)
             return sum(inner_args) do a
                 new_args = copy(args)
                 new_args[i] = a
                 expand_MLO(T,new_args)
             end
         elseif op == (*)
-            inner_args = arguments(arg)
-            if isa(inner_args[1], Number)
-                new_args = copy(args)
-                new_args[i] = prod(inner_args[2:end])
-                return inner_args[1]*expand_MLO(T,new_args)
+            for (j,iarg) in enumerate(inner_args)
+                if isa(iarg, Number) || symtype(iarg) <: ZeroDeriv
+                    new_args = copy(args)
+                    new_args[i] = prod(inner_args[(1:j-1)∪(j+1:end)])
+                    return distribute(iarg*expand_MLO(T,new_args))
+                end
+                new_iarg = expand_MLOs(iarg)
+                if !isequal(new_iarg, iarg)
+                    new_iargs = copy(inner_args)
+                    new_iargs[j] = new_iarg
+                    new_args = copy(args)
+                    new_args[i] = distribute(prod(new_iargs))
+                    return expand_MLO(T, new_args)
+                end
             end
         elseif isa(op, AbstractMultiLinearOperator)
-            inner_args = arguments(arg)
             new_args = copy(args)
             new_args[i] = expand_MLO(op, inner_args)
             !isequal(new_args[i], args[i]) && return expand_MLO(T, new_args)
