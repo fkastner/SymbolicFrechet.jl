@@ -119,8 +119,14 @@ FrechetDifferential(order, ::SymbolicUtils.BasicSymbolic{ZeroDeriv}) = Returns(0
 
 nargs(D::FrechetDifferential) = isa(D.fun, AbstractMultiLinearOperator) ? D.order + nargs(D.fun) : D.order
 
-SymbolicUtils.operation(D::FrechetDifferential) = FrechetDifferential
-SymbolicUtils.arguments(D::FrechetDifferential) = D.fun
+# TermInterface.jl interface
+SymbolicUtils.isexpr(x::FrechetDifferential) = true
+SymbolicUtils.head(x::FrechetDifferential) = FrechetDerivative(D.order)
+SymbolicUtils.children(x::FrechetDifferential) = Any[D.fun]
+SymbolicUtils.iscall(x::FrechetDifferential) = true
+SymbolicUtils.operation(D::FrechetDifferential) = FrechetDerivative(D.order)
+SymbolicUtils.arguments(D::FrechetDifferential) = Any[D.fun]
+SymbolicUtils.maketerm(::Type{FrechetDifferential}, f, args, metadata) = f(args...)
 
 Base.nameof(D::FrechetDifferential) = Symbol("d($(D.fun))")
 Base.show(io::IO, D::FrechetDifferential) = print(io, (D.order == 1 ? "d" : "d^$(D.order)") * "($(D.fun))")
