@@ -13,6 +13,14 @@ SymbolicUtils.promote_symtype(::AbstractMultiLinearOperator, Ts...) = Real
 SymbolicUtils.isbinop(::AbstractMultiLinearOperator) = false
 
 
+struct ZeroDeriv <: Number end
+isscalar(x) = iscall(x) ? isscalar(operation(x)) && all(isscalar, arguments(x)) : false
+isscalar(::typeof(^)) = true
+isscalar(::typeof(+)) = true
+isscalar(::typeof(*)) = true
+isscalar(::Number) = true
+isscalar(::SymbolicUtils.BasicSymbolic{ZeroDeriv}) = true
+
 #### distribute * over +
 function distribute(O::Symbolic)
     iscall(O) || return O
@@ -69,7 +77,7 @@ function expand_MLO(T, args)
             end
         elseif op == (*)
             for (j,iarg) in enumerate(inner_args)
-                if isa(iarg, Number) || symtype(iarg) <: ZeroDeriv
+                if isscalar(iarg)
                     new_args = copy(args)
                     new_args[i] = prod(inner_args[(1:j-1)∪(j+1:end)])
                     return distribute(iarg*expand_MLO(T,new_args))
@@ -100,8 +108,6 @@ end
 nargs(T::MultiLinearOperator) = T.nargs
 Base.nameof(T::MultiLinearOperator) = T.name
 Base.show(io::IO, T::MultiLinearOperator) = print(io, T.name)
-
-struct ZeroDeriv <: Number end
 
 struct FrechetDifferential <: AbstractMultiLinearOperator
     order
@@ -139,8 +145,7 @@ function expand_fdiff(T::FrechetDifferential, args)
     order = T.order
     fun = T.fun
 
-    isa(fun, Number) && return 0
-    symtype(fun) <: ZeroDeriv && return 0
+    isscalar(fun) && return 0
     !iscall(fun) && return T(args...)
 
     op = operation(fun)
