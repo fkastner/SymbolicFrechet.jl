@@ -8,7 +8,12 @@ export expand_fdiffs, expand_MLOs
 
 abstract type AbstractMultiLinearOperator end
 
-(T::AbstractMultiLinearOperator)(args...) = length(args) == nargs(T) ? term(T, args...) : throw(ArgumentError("need $(nargs(T)) many arguments, got $(length(args))"))
+function (T::AbstractMultiLinearOperator)(args...)
+    length(args) != nargs(T) && throw(ArgumentError("need $(nargs(T)) many arguments, got $(length(args))"))
+    issymmetricoperator(T) ? term(T, sort!(collect(args); by=hash)...) : term(T, args...)
+end
+issymmetricoperator(T::AbstractMultiLinearOperator) = false
+
 SymbolicUtils.promote_symtype(::AbstractMultiLinearOperator, Ts...) = Real
 SymbolicUtils.isbinop(::AbstractMultiLinearOperator) = false
 
@@ -103,9 +108,13 @@ end
 
 struct MultiLinearOperator <: AbstractMultiLinearOperator
     name
-    nargs
+    nargs::Int
+    symmetric::Bool
+    MultiLinearOperator(name,nargs,symmetric=false) = new(name,nargs,symmetric)
 end
 nargs(T::MultiLinearOperator) = T.nargs
+issymmetricoperator(T::MultiLinearOperator) = T.symmetric
+
 Base.nameof(T::MultiLinearOperator) = T.name
 Base.show(io::IO, T::MultiLinearOperator) = print(io, T.name)
 
@@ -118,6 +127,7 @@ FrechetDifferential(order, ::typeof(*)) = Returns(0)
 FrechetDifferential(order, ::SymbolicUtils.BasicSymbolic{ZeroDeriv}) = Returns(0)
 
 nargs(D::FrechetDifferential) = isa(D.fun, AbstractMultiLinearOperator) ? D.order + nargs(D.fun) : D.order
+issymmetricoperator(::FrechetDifferential) = true
 
 # TermInterface.jl interface
 SymbolicUtils.isexpr(x::FrechetDifferential) = true
