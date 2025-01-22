@@ -220,4 +220,7 @@ Base.:^(D::FrechetDerivative, n::Integer) = iszero(n) ? identity : FrechetDeriva
 Base.nameof(D::FrechetDerivative) = :d
 Base.show(io::IO, D::FrechetDerivative) = print(io, D.order == 1 ? "d" : "d^$(D.order)")
 
+
+include("expand.jl")
+
 end # module
