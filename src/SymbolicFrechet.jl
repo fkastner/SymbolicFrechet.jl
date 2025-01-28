@@ -14,7 +14,7 @@ function (T::AbstractMultiLinearOperator)(args...)
 end
 issymmetricoperator(T::AbstractMultiLinearOperator) = false
 
-SymbolicUtils.promote_symtype(::AbstractMultiLinearOperator, Ts...) = Real
+SymbolicUtils.promote_symtype(::AbstractMultiLinearOperator, Ts...) = promote_type(Ts...)
 SymbolicUtils.isbinop(::AbstractMultiLinearOperator) = false
 
 
