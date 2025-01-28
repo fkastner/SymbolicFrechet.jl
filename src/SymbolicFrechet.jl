@@ -3,6 +3,8 @@ module SymbolicFrechet
 using SymbolicUtils
 import SymbolicUtils: Symbolic, symtype
 
+using Combinatorics
+
 export MultiLinearOperator, FrechetDerivative
 export expand_fdiffs, expand_MLOs
 

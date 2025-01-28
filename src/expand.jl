@@ -34,6 +34,20 @@ function expand(op::typeof(*), args)
     return prod(args)
 end
 
+function expand(op::typeof(^), args)
+    base = args[1]
+    exponent = args[2]
+
+    isinteger(exponent) && exponent > 0 || return base^exponent
+    iscall(base) && operation(base) == (+) || return base^exponent
+
+    inner_args = arguments(base)
+    n = length(inner_args)
+    return sum(multiexponents(n, exponent)) do exponents
+        multinomial(exponents...)*prod(inner_args.^exponents)
+    end
+end
+
 function expand(op::AbstractMultiLinearOperator, args)
     for (i,arg) in enumerate(args)
         iscall(arg) || continue
